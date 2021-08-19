@@ -52,6 +52,7 @@ def receive_streaming_upload(handler):
                 handler.log_message('Upload was rejected (bad token)')
                 return (http.HTTPStatus.FORBIDDEN, 'Token is enabled on this server, and your token is wrong')
         
+        # Verify that a file was present
         if not directory_target.multipart_filenames:
             return (http.HTTPStatus.BAD_REQUEST, 'Field "files" not found')
         
