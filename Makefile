@@ -21,8 +21,8 @@ initialize-test:
 
 download-test:
 	wget --output-document="uploadserver.zip" "https://github.com/NteRySin/uploadserver/archive/12229ac1ccaf1f60a4319ffba78bdb7f6c6b8e6f.zip"
-	unzip -j "uploadserver.zip" "uploadserver-*/test.py"
-	unzip -j "uploadserver.zip" "uploadserver-*/test-files/* -d test-files/"
+	unzip -j "uploadserver.zip" uploadserver-*/test.py
+	unzip -j "uploadserver.zip" uploadserver-*/test-files/* -d test-files/
 
 test: initialize-test download-test
 	openssl req -x509 -out server.pem -keyout server.pem -newkey rsa:2048 -nodes -sha256 -subj "/CN=server"
