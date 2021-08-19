@@ -52,6 +52,9 @@ def receive_streaming_upload(handler):
                 handler.log_message('Upload was rejected (bad token)')
                 return (http.HTTPStatus.FORBIDDEN, 'Token is enabled on this server, and your token is wrong')
         
+        if not directory_target.multipart_filenames:
+            return (http.HTTPStatus.BAD_REQUEST, 'Field "files" not found')
+        
         # Move temporary files to final destination
         source_directory_path = pathlib.Path(temporary_directory)
         destination_directory_path = pathlib.Path(args.directory)
@@ -66,5 +69,5 @@ def receive_streaming_upload(handler):
 
 uploadserver.receive_upload = Streamreceive_streaming_uploadingUploadServer
 def main():
-uploadserver.main()
+    uploadserver.main()
 
