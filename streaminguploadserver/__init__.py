@@ -11,8 +11,11 @@ TOKEN_FORM_NAME = "token"
 
 # Receive streaming uploads
 def receive_streaming_upload(handler):
-    assert hasattr(args, "token")
-    assert hasattr(args, "directory") and type(args.directory) is str
+    assert hasattr(uploadserver.args, "token")
+    assert (
+        hasattr(uploadserver.args, "directory")
+        and type(uploadserver.args.directory) is str
+    )
 
     # Default return code is error
     return_code = (http.HTTPStatus.INTERNAL_SERVER_ERROR, "Server error")
@@ -52,9 +55,9 @@ def receive_streaming_upload(handler):
                     return (http.HTTPStatus.BAD_REQUEST, "Upload was interrupted")
 
         # Verify token
-        if args.token:
+        if uploadserver.args.token:
             # Server was started with token
-            if token_target.value.decode(FORM_ENCODING) != args.token:
+            if token_target.value.decode(FORM_ENCODING) != uploadserver.args.token:
                 # No or wrong token provided
                 handler.log_message("Upload was rejected (bad token)")
                 return (
@@ -68,7 +71,7 @@ def receive_streaming_upload(handler):
 
         # Move temporary files to final destination
         source_directory_path = pathlib.Path(temporary_directory)
-        destination_directory_path = pathlib.Path(args.directory)
+        destination_directory_path = pathlib.Path(uploadserver.args.directory)
         for multipart_filename in directory_target.multipart_filenames:
             shutil.move(
                 source_directory_path / multipart_filename,
@@ -86,7 +89,7 @@ def receive_streaming_upload(handler):
     return return_code
 
 
-uploadserver.receive_upload = Streamreceive_streaming_uploadingUploadServer
+uploadserver.receive_upload = receive_streaming_upload
 
 
 def main():

@@ -24,7 +24,7 @@ setuptools.setup(
     python_requires=">=3.6",
     install_requires=[
         "streaming_form_data @ git+https://github.com/NteRySin/streaming-form-data@patch-1#egg=streaming_form_data",
-        "tqdm",
-        "uploadserver @ git+https://github.com/Densaugeo/uploadserver#egg=uploadserver",
+        "tqdm>=4.0.0",
+        "uploadserver>=2.0.0",
     ],
 )

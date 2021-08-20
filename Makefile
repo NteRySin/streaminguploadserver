@@ -13,7 +13,7 @@ upload:
 	python3 -m twine upload --repository streaminguploadserver dist/*
 
 clean:
-	rm --recursive --force __pycache__/ build/ dist/ .pytest_cache/ streaminguploadserver.egg-info/ test-files/ test-temp/ venv-python3/ client.crt client.pem server.pem test.py uploadserver.zip
+	rm --recursive --force __pycache__/ build/ dist/ .pytest_cache/ streaminguploadserver.egg-info/ streaminguploadserver/__pycache__/ test-files/ test-temp/ venv-python3/ client.crt client.pem server.pem test.py uploadserver.zip
 
 initialize-test:
 	python3 -m venv venv-python3
@@ -23,8 +23,9 @@ download-test:
 	wget --output-document="uploadserver.zip" "https://github.com/NteRySin/uploadserver/archive/12229ac1ccaf1f60a4319ffba78bdb7f6c6b8e6f.zip"
 	unzip -j "uploadserver.zip" uploadserver-*/test.py
 	unzip -j "uploadserver.zip" uploadserver-*/test-files/* -d test-files/
+	sed --in-place "s/uploadserver/streaminguploadserver/g" "test.py"
 
-test: initialize-test download-test
+test-only:
 	openssl req -x509 -out server.pem -keyout server.pem -newkey rsa:2048 -nodes -sha256 -subj "/CN=server"
 	openssl req -x509 -out client.pem -keyout client.pem -newkey rsa:2048 -nodes -sha256 -subj "/CN=client"
 	openssl x509 -in client.pem -out client.crt
@@ -34,3 +35,5 @@ test: initialize-test download-test
 	rm --recursive --force test-temp/
 	. venv-python3/bin/activate; PROTOCOL=HTTPS VERBOSE=1 python3 -u -m pytest --verbosity 2 --tb short --capture no test.py
 	rm --recursive --force test-temp/
+
+test: install-dev initialize-test download-test test-only
