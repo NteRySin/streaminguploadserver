@@ -23,7 +23,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     python_requires=">=3.6",
     install_requires=[
-        "streaming_form_data @ git+https://github.com/NteRySin/streaming-form-data@patch-1#egg=streaming_form_data",
+        "streaming_form_data>=1.10.0",
         "tqdm>=4.0.0",
         "uploadserver>=2.0.0",
     ],
