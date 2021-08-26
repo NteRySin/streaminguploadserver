@@ -10,7 +10,7 @@ package:
 	python3 -m build
 
 upload:
-	python3 -m twine upload --repository streaminguploadserver dist/*
+	python3 -m twine upload dist/*
 
 clean:
 	rm --recursive --force __pycache__/ build/ dist/ .pytest_cache/ streaminguploadserver.egg-info/ streaminguploadserver/__pycache__/ test-files/ test-temp/ venv-python3/ client.crt client.pem server.pem test.py uploadserver.zip
