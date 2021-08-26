@@ -16,7 +16,7 @@ python3 -m streaminguploadserver --help
 
 ## Installation
 ```
-pip3 install git+https://github.com/NteRySin/streaminguploadserver
+pip3 install streaminguploadserver
 ```
 
 ## Development
