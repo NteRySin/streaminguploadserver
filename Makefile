@@ -20,10 +20,11 @@ initialize-test:
 	. venv-python3/bin/activate; python3 -m pip install pytest requests; python3 -m pip install -e .
 
 download-test:
-	wget --output-document="uploadserver.zip" "https://github.com/NteRySin/uploadserver/archive/12229ac1ccaf1f60a4319ffba78bdb7f6c6b8e6f.zip"
+	wget --output-document="uploadserver.zip" "https://github.com/Densaugeo/uploadserver/archive/refs/tags/5.0.0.zip"
 	unzip -j "uploadserver.zip" uploadserver-*/test.py
 	unzip -j "uploadserver.zip" uploadserver-*/test-files/* -d test-files/
 	sed --in-place "s/uploadserver/streaminguploadserver/g" "test.py"
+        sed --in-place "s/time.sleep(0.01)/time.sleep(0.1)/g" "test.py"
 
 test-only:
 	openssl req -x509 -out server.pem -keyout server.pem -newkey rsa:2048 -nodes -sha256 -subj "/CN=server"
