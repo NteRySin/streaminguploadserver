@@ -24,7 +24,7 @@ download-test:
 	unzip -j "uploadserver.zip" uploadserver-*/test.py
 	unzip -j "uploadserver.zip" uploadserver-*/test-files/* -d test-files/
 	sed --in-place "s/uploadserver/streaminguploadserver/g" "test.py"
-        sed --in-place "s/time.sleep(0.01)/time.sleep(0.1)/g" "test.py"
+	sed --in-place "s/time.sleep(0.01)/time.sleep(0.1)/g" "test.py"
 
 test-only:
 	openssl req -x509 -out server.pem -keyout server.pem -newkey rsa:2048 -nodes -sha256 -subj "/CN=server"
