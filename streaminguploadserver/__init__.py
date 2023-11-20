@@ -1,4 +1,4 @@
-import http, pathlib, shutil, tempfile, uploadserver
+import http, os, pathlib, shutil, tempfile, uploadserver
 from streaming_form_data import StreamingFormDataParser
 from streaming_form_data.targets import DirectoryTarget, ValueTarget
 from tqdm import tqdm
@@ -7,11 +7,10 @@ DEFAULT_CHUNK_SIZE = 65536
 CONTENT_LENGTH_HEADER_NAME = "Content-Length"
 FORM_ENCODING = "utf-8"
 FILES_FORM_NAME = "files"
-TOKEN_FORM_NAME = "token"
 
 # Receive streaming uploads
 def receive_streaming_upload(handler):
-    assert hasattr(uploadserver.args, "token")
+    assert hasattr(uploadserver.args, "allow_replace")
     assert (
         hasattr(uploadserver.args, "directory")
         and type(uploadserver.args.directory) is str
@@ -24,9 +23,7 @@ def receive_streaming_upload(handler):
         # Initialize parser and targets
         parser = StreamingFormDataParser(headers=handler.headers)
         directory_target = DirectoryTarget(temporary_directory)
-        token_target = ValueTarget()
         parser.register(FILES_FORM_NAME, directory_target)
-        parser.register(TOKEN_FORM_NAME, token_target)
 
         # Prepare upload processing
         total_size = int(handler.headers[CONTENT_LENGTH_HEADER_NAME])
@@ -54,29 +51,19 @@ def receive_streaming_upload(handler):
                     handler.log_message("Upload was interrupted")
                     return (http.HTTPStatus.BAD_REQUEST, "Upload was interrupted")
 
-        # Verify token
-        if uploadserver.args.token:
-            # Server was started with token
-            if token_target.value.decode(FORM_ENCODING) != uploadserver.args.token:
-                # No or wrong token provided
-                handler.log_message("Upload was rejected (bad token)")
-                return (
-                    http.HTTPStatus.FORBIDDEN,
-                    "Token is enabled on this server, and your token is wrong",
-                )
-
         # Verify that a file was present
-        if not directory_target.multipart_filenames:
-            return (http.HTTPStatus.BAD_REQUEST, 'Field "files" not found')
+        if not (directory_target.multipart_filenames and all(multipart_filename for multipart_filename in directory_target.multipart_filenames)):
+            return (http.HTTPStatus.BAD_REQUEST, 'No files selected')
 
         # Move temporary files to final destination
         source_directory_path = pathlib.Path(temporary_directory)
         destination_directory_path = pathlib.Path(uploadserver.args.directory)
         for multipart_filename in directory_target.multipart_filenames:
-            shutil.move(
-                source_directory_path / multipart_filename,
-                destination_directory_path / multipart_filename,
-            )
+            source = source_directory_path / multipart_filename
+            destination = destination_directory_path / multipart_filename
+            if os.path.exists(destination) and not (uploadserver.args.allow_replace and os.path.isfile(destination)):
+                destination = uploadserver.auto_rename(destination)
+            shutil.move(source, destination)
 
         # Upload successful
         handler.log_message(
