@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="streaminguploadserver",
-    version="0.0.1",
+    version="0.0.2",
     author="NteRySin",
     author_email="author@example.com",
     description="Streaming upload server in Python extended from http.server",
@@ -25,6 +25,6 @@ setuptools.setup(
     install_requires=[
         "streaming_form_data>=1.10.0",
         "tqdm>=4.0.0",
-        "uploadserver>=2.0.0",
+        "uploadserver>=5.0.0,<6",
     ],
 )
