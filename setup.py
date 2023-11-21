@@ -23,8 +23,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     python_requires=">=3.6",
     install_requires=[
-        "streaming_form_data>=1.10.0",
-        "tqdm>=4.0.0",
+        "multipart>=0.2,<0.3",
         "uploadserver>=5.0.0,<6",
     ],
 )
