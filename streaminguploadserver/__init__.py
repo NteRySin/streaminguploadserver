@@ -1,79 +1,42 @@
-import http, os, pathlib, shutil, tempfile, uploadserver
-from streaming_form_data import StreamingFormDataParser
-from streaming_form_data.targets import DirectoryTarget, ValueTarget
-from tqdm import tqdm
+import http, multipart, os, pathlib, uploadserver
 
-DEFAULT_CHUNK_SIZE = 65536
-CONTENT_LENGTH_HEADER_NAME = "Content-Length"
-FORM_ENCODING = "utf-8"
-FILES_FORM_NAME = "files"
+DISK_LIMIT = 2 ** 40
 
 # Receive streaming uploads
 def receive_streaming_upload(handler):
-    assert hasattr(uploadserver.args, "allow_replace")
+    assert hasattr(uploadserver.args, 'allow_replace')
     assert (
-        hasattr(uploadserver.args, "directory")
+        hasattr(uploadserver.args, 'directory')
         and type(uploadserver.args.directory) is str
     )
 
-    # Default return code is error
-    return_code = (http.HTTPStatus.INTERNAL_SERVER_ERROR, "Server error")
-    with tempfile.TemporaryDirectory() as temporary_directory:
+    # Initialize multipart parser
+    boundary = None
+    (content_type, content_type_options) = multipart.parse_options_header(handler.headers['Content-Type'])
+    if content_type_options and 'boundary' in content_type_options:
+        boundary = content_type_options['boundary']
+    content_length = int(handler.headers['Content-Length'])
+    multipart_parser = multipart.MultipartParser(handler.rfile, boundary, content_length=content_length, disk_limit=DISK_LIMIT)
 
-        # Initialize parser and targets
-        parser = StreamingFormDataParser(headers=handler.headers)
-        directory_target = DirectoryTarget(temporary_directory)
-        parser.register(FILES_FORM_NAME, directory_target)
+    # Persist uploaded files to disk
+    files_uploaded = 0
+    destination_directory_path = pathlib.Path(uploadserver.args.directory)
+    for multipart_part in multipart_parser.get_all('files'):
+        if multipart_part.file and multipart_part.filename:
+            destination_path = destination_directory_path / pathlib.Path(multipart_part.filename).resolve().name
+            if os.path.exists(destination_path) and not (uploadserver.args.allow_replace and os.path.isfile(destination_path)):
+                destination_path = uploadserver.auto_rename(destination_path)
+            multipart_part.save_as(destination_path)
+            multipart_part.close()
+            files_uploaded += 1
+            handler.log_message(f'Uploaded "{destination_path}"')
 
-        # Prepare upload processing
-        total_size = int(handler.headers[CONTENT_LENGTH_HEADER_NAME])
-        processed_size = 0
-        current_chunk_size = DEFAULT_CHUNK_SIZE
+    if files_uploaded < 1:
+        return (http.HTTPStatus.BAD_REQUEST, 'No files selected')
 
-        # Process upload in chunks
-        with tqdm(
-            desc="Receiving data from remote host",
-            total=total_size,
-            dynamic_ncols=True,
-            mininterval=1,
-            unit="B",
-            unit_scale=True,
-        ) as progress_bar:
-            while processed_size < total_size:
-                processed_size += current_chunk_size
-                if processed_size > total_size:
-                    current_chunk_size += total_size - processed_size
-                chunk = handler.rfile.read(current_chunk_size)
-                if chunk:
-                    parser.data_received(chunk)
-                    progress_bar.update(current_chunk_size)
-                else:
-                    handler.log_message("Upload was interrupted")
-                    return (http.HTTPStatus.BAD_REQUEST, "Upload was interrupted")
-
-        # Verify that a file was present
-        if not (directory_target.multipart_filenames and all(multipart_filename for multipart_filename in directory_target.multipart_filenames)):
-            return (http.HTTPStatus.BAD_REQUEST, 'No files selected')
-
-        # Move temporary files to final destination
-        source_directory_path = pathlib.Path(temporary_directory)
-        destination_directory_path = pathlib.Path(uploadserver.args.directory)
-        for multipart_filename in directory_target.multipart_filenames:
-            source = source_directory_path / multipart_filename
-            destination = destination_directory_path / multipart_filename
-            if os.path.exists(destination) and not (uploadserver.args.allow_replace and os.path.isfile(destination)):
-                destination = uploadserver.auto_rename(destination)
-            shutil.move(source, destination)
-
-        # Upload successful
-        handler.log_message(
-            "Upload of {} file(s) accepted".format(
-                len(directory_target.multipart_filenames)
-            )
-        )
-        return_code = (http.HTTPStatus.NO_CONTENT, None)
-
-    return return_code
+    # Upload successful
+    handler.log_message(f'Finished uploading {files_uploaded} file(s)')
+    return (http.HTTPStatus.NO_CONTENT, None)
 
 
 uploadserver.receive_upload = receive_streaming_upload
