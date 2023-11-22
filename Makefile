@@ -4,7 +4,7 @@ install-dev:
 	python3 -m pip install --upgrade build twine
 
 format-code:
-	black *.py */*.py
+	black --line-length 120 *.py */*.py
 
 package:
 	python3 -m build
